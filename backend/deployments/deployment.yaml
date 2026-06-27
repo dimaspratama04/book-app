@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: dimaspratama04/api-book-app:v1.0.0
+          image: dimaspratama04/book-app-backend:v1.0.4
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

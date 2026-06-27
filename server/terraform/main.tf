@@ -47,7 +47,7 @@ resource "google_compute_firewall" "allow_ingress" {
 # Cloud DNS managed zone
 resource "google_dns_managed_zone" "zone" {
   name        = var.dns_zone_name
-  dns_name    = var.dns_domain
+  dns_name    = "${var.dns_domain}."
   description = "Managed zone for the book-app"
 }
 
