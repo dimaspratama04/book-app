@@ -2,38 +2,16 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+rule_files:
+  - "alert.rules.yml"
+
 scrape_configs:
   - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]
 
-  # collect data from sidecar to monitor probe
-  - job_name: "backend-book-app-sidecar-kubernetes"
-    metrics_path: /probe
-    params:
-      module: [http_2xx]
+  # collect data directly from the backend application
+  - job_name: "backend-book-app"
+    metrics_path: /metrics
     static_configs:
-      - targets:
-          - http://192.168.139.158:30115 # pointing to sidecar pods
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: 192.168.139.158:30115
-
-  - job_name: "backend-book-app-sidecar-compose"
-    metrics_path: /probe
-    params:
-      module: [http_2xx]
-    static_configs:
-      - targets:
-          - http://localhost:9115 # pointing to sidecar pods
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: http://localhost:9115
+      - targets: ["book-app-backend:5001"]

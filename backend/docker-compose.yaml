@@ -1,4 +1,19 @@
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: book-app-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bookuser
+      POSTGRES_PASSWORD: bookpassword
+      POSTGRES_DB: booktracker_prod
+    ports:
+      - "5432:5432"
+    networks:
+      - shared-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   backend:
     build:
       context: .
@@ -9,18 +24,16 @@ services:
       - "5001:5001"
     env_file:
       - .env
+    depends_on:
+      - db
+    networks:
+      - shared-network
     volumes:
       - ./books.json:/app/books.json
 
-  blackbox-exporter:
-    image: prom/blackbox-exporter:v0.25.0
-    container_name: blackbox-exporter
-    restart: unless-stopped
-    ports:
-      - "9115:9115"
-    volumes:
-      - ./blackbox.yml:/etc/blackbox_exporter/config.yml:ro
-    command:
-      - "--config.file=/etc/blackbox_exporter/config.yml"
-    depends_on:
-      - backend
+networks:
+  shared-network:
+    name: book-app-network
+
+volumes:
+  postgres_data:

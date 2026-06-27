@@ -9,9 +9,10 @@ data:
   FLASK_DEBUG: "False"
   FLASK_HOST: "0.0.0.0"
   FLASK_PORT: "5001"
-  DATABASE_URL: "sqlite:///books.db"
+  DATABASE_URL: "postgresql://bookuser:bookpaassword@db/booktracker_prod"
   CORS_ORIGINS: "http://localhost:8080,http://localhost:5173,http://127.0.0.1:8080,http://127.0.0.1:5173"
   API_PREFIX: "/api"
+  SECRET_KEY: "secret"
   DATA_FILE: "books.json"
   # NOTE: SECRET_KEY is intentionally NOT here — keep secrets in a Kubernetes
   # Secret instead, e.g.:

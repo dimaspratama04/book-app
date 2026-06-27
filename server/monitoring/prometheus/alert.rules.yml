@@ -1,0 +1,20 @@
+groups:
+  - name: backend_alerts
+    rules:
+      - alert: BackendDown
+        expr: up{job="backend-book-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend app is down"
+          description: "Prometheus could not scrape the backend app (target {{ $labels.instance }}) for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: sum(rate(flask_http_request_total{status=~"5.."}[1m])) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP 5xx error rate on backend"
+          description: "The backend app is experiencing a high rate of 5xx errors."

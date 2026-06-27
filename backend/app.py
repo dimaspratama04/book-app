@@ -4,11 +4,14 @@ from datetime import datetime
 import json
 import os
 from dotenv import load_dotenv
+from prometheus_flask_exporter import PrometheusMetrics
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
+metrics.info('app_info', 'Application info', version='1.0.0')
 
 # Get configuration from environment variables
 FLASK_HOST = os.getenv('FLASK_HOST', '0.0.0.0')
