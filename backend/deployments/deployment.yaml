@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-app-backend
+  labels:
+    app: book-app-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-app-backend
+  template:
+    metadata:
+      labels:
+        app: book-app-backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9115"
+    spec:
+      containers:
+        - name: backend
+          image: dimaspratama04/api-book-app:v1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5001
+          envFrom:
+            - configMapRef:
+                name: book-app-backend-config
+          # Inject SECRET_KEY from a Secret (create it separately — see configmap.yaml).
+          # env:
+          #   - name: SECRET_KEY
+          #     valueFrom:
+          #       secretKeyRef:
+          #         name: book-app-backend-secret
+          #         key: SECRET_KEY
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /api/test
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/test
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+        # sidecar exporter
+        - name: sidecar-exporter
+          image: prom/blackbox-exporter:v0.25.0
+          args:
+            - "--config.file=/etc/blackbox_exporter/config.yml"
+          ports:
+            - name: blackbox-port
+              containerPort: 9115
+          volumeMounts:
+            - name: blackbox-config
+              mountPath: /etc/blackbox_exporter
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+            limits:
+              cpu: 50m
+              memory: 50Mi
+      volumes:
+        - name: blackbox-config
+          configMap:
+            name: blackbox-config

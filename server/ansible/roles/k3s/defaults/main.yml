@@ -1,0 +1,15 @@
+---
+# K3s role default variables
+
+# Pin a specific K3s version, or leave empty to install the latest stable release.
+k3s_version: ""
+
+# Extra arguments passed to the K3s server install (space separated).
+# `--write-kubeconfig-mode 644` makes the kubeconfig readable by non-root users.
+k3s_server_args: "--write-kubeconfig-mode 644"
+
+# Where the install script downloads from.
+k3s_install_url: "https://get.k3s.io"
+
+# Path to the generated kubeconfig on the target host.
+k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml

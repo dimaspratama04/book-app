@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-app-backend
+  labels:
+    app: book-app-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: book-app-backend
+  ports:
+    - name: http
+      port: 5001
+      targetPort: http
+      protocol: TCP
+    - name: blackbox
+      port: 9115
+      targetPort: blackbox-port
+      protocol: TCP

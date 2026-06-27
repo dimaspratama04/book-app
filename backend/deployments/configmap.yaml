@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: book-app-backend-config
+  labels:
+    app: book-app-backend
+data:
+  FLASK_ENV: "production"
+  FLASK_DEBUG: "False"
+  FLASK_HOST: "0.0.0.0"
+  FLASK_PORT: "5001"
+  DATABASE_URL: "sqlite:///books.db"
+  CORS_ORIGINS: "http://localhost:8080,http://localhost:5173,http://127.0.0.1:8080,http://127.0.0.1:5173"
+  API_PREFIX: "/api"
+  DATA_FILE: "books.json"
+  # NOTE: SECRET_KEY is intentionally NOT here — keep secrets in a Kubernetes
+  # Secret instead, e.g.:
+  #   kubectl create secret generic book-app-backend-secret \
+  #     --from-literal=SECRET_KEY='change-me'
+  # then reference it via secretKeyRef in the Deployment.

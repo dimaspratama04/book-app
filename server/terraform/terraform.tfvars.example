@@ -1,0 +1,17 @@
+# Copy this file to terraform.tfvars and fill in your values.
+
+project_id = "my-gcp-project-id"
+region     = "asia-southeast2"
+zone       = "asia-southeast2-a"
+
+# VM spec: e2-medium = 2 vCPU, 4 GB memory
+instance_name = "book-app-vm"
+machine_type  = "e2-medium"
+
+ssh_user            = "ubuntu"
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+
+# DNS — dns_domain MUST end with a trailing dot
+dns_zone_name   = "book-app-zone"
+dns_domain      = "example.com."
+dns_record_name = "app"
