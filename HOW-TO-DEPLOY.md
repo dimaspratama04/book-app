@@ -21,9 +21,11 @@ Sebelum memulai, pastikan sistem Anda sudah terinstal tools berikut sesuai denga
 
 ## JALUR A: Deployment menggunakan Docker Compose (Lokal/Development)
 
-### 1. Deploy Backend (dan Blackbox Exporter)
+Konfigurasi Docker Compose saat ini telah dirancang terintegrasi; Backend, Database (PostgreSQL), dan Monitoring (Prometheus & Grafana) berada dalam satu _shared network_ (`book-app-network`).
 
-Tahap pertama adalah menjalankan layanan utama (Backend API) beserta _sidecar_ pengeceknya yaitu Blackbox Exporter.
+### 1. Deploy Backend dan Database (PostgreSQL)
+
+Tahap pertama adalah menjalankan layanan utama (Backend API) beserta dependensi basis datanya.
 
 1. Buka terminal dan masuk ke direktori `backend/`:
    ```bash
@@ -41,14 +43,17 @@ Tahap pertama adalah menjalankan layanan utama (Backend API) beserta _sidecar_ p
    ```bash
    docker-compose ps
    ```
+   _(Catatan: Menjalankan backend akan secara otomatis mendirikan network `book-app-network` yang dibutuhkan oleh komponen monitoring nantinya)._
 
 ### 2. Deploy Sistem Monitoring (Prometheus & Grafana)
+
+Sistem monitoring akan men-_scrape_ metrik langsung dari aplikasi backend secara otomatis (via endpoint `/metrics`) dan memuat _dashboard_ yang telah di-_provision_.
 
 1. Buka terminal dan masuk ke direktori `server/monitoring/`:
    ```bash
    cd server/monitoring
    ```
-2. Jalankan _container_ Prometheus dan Grafana:
+2. Pastikan network `book-app-network` dari tahap sebelumnya sudah ada, lalu jalankan:
    ```bash
    docker-compose up -d
    ```
@@ -57,7 +62,9 @@ Tahap pertama adalah menjalankan layanan utama (Backend API) beserta _sidecar_ p
 
 - **Backend API**: [http://localhost:5001](http://localhost:5001)
 - **Prometheus UI**: [http://localhost:9090](http://localhost:9090)
-- **Grafana UI**: [http://localhost:3000](http://localhost:3000) (User: `administrator`, Pass: `changemeindproduction`)
+- **Grafana UI**: [http://localhost:3000](http://localhost:3000)
+  - Login default (jika diminta): User: `administrator`, Pass: `changemeindproduction`
+  - Buka menu _Dashboards_ untuk melihat panel "Book App Backend Monitoring" yang telah terpasang otomatis.
 
 _(Tear down: Gunakan perintah `docker-compose down` pada masing-masing folder)._
 
@@ -67,72 +74,37 @@ _(Tear down: Gunakan perintah `docker-compose down` pada masing-masing folder)._
 
 Jalur ini digunakan apabila Anda ingin men-deploy arsitektur ke klaster server (VM) sungguhan.
 
-### 1. Provisioning Virtual Machine dengan Terraform (`server/terraform`)
+### 1. K3s Cluster Auth (SRE Access)
 
-Terraform digunakan untuk menyewa/mencetak Virtual Machine secara otomatis yang akan dijadikan node klaster Kubernetes.
+Setelah klaster dibuat, Anda sangat disarankan untuk mengatur akses SRE berbasis Service Account dan Bearer Token daripada menggunakan admin root `kubeconfig`.
 
-1. Masuk ke direktori terraform:
-   ```bash
-   cd server/terraform
-   ```
-2. Inisialisasi plugin Terraform:
-   ```bash
-   terraform init
-   ```
-3. Lihat rencana _provisioning_ (pastikan _cloud provider credential_ sudah diset):
-   ```bash
-   terraform plan
-   ```
-4. Eksekusi pembuatan _resources_:
-   ```bash
-   terraform apply -auto-approve
-   ```
-   _(Catatan: Setelah selesai, catat Public IP dari output terraform untuk dimasukkan ke file inventory Ansible)_.
+- Lihat panduannya di: **[server/k3s/AUTH.md](server/k3s/AUTH.md)**
 
-### 2. Konfigurasi Server dengan Ansible (`server/ansible`)
+### 2. Manual Kubectl Apply
 
-Ansible bertugas menginstal dependensi dasar, mengatur _firewall_, menyiapkan _container runtime_, dan mengonfigurasi VM hingga menjadi klaster Kubernetes yang berjalan.
-
-1. Masuk ke direktori ansible:
-   ```bash
-   cd server/ansible
-   ```
-2. Sesuaikan file inventory (misal `inventory/hosts`) dengan IP dari hasil Terraform.
-3. Jalankan Ansible Playbook untuk mengonfigurasi VM:
-   ```bash
-   ansible-playbook -i inventory/hosts site.yml
-   ```
-   _(Setelah playbook selesai, klaster Kubernetes Anda sudah terinstal dan berjalan)._
-
-### 3. Deploy Aplikasi ke Kubernetes (`backend/deployments`)
-
-Setelah klaster menyala dan Anda telah menghubungkan `kubeconfig` (`~/.kube/config`) lokal Anda ke klaster, Anda bisa mulai menerapkan manifest.
+Anda dapat menerapkan manifest deployment ke kluster secara manual:
 
 1. Masuk ke direktori manifest deployment:
    ```bash
    cd backend/deployments
    ```
-2. Terapkan (apply) objek _ConfigMap_ terlebih dahulu (termasuk config Blackbox):
+2. Terapkan objek Kubernetes berurutan:
    ```bash
    kubectl apply -f configmap.yaml
-   kubectl apply -f blackbox-configmap.yaml
-   ```
-3. Terapkan _Deployment_ aplikasi (yang memuat container backend & sidecar blackbox):
-   ```bash
    kubectl apply -f deployment.yaml
-   ```
-4. Expose aplikasi agar dapat diakses dari dalam klaster menggunakan _Service_:
-   ```bash
    kubectl apply -f service.yaml
    ```
-5. _(Opsional)_ Jika Anda menggunakan Ingress Traefik (Gateway API), terapkan routing HTTP agar aplikasi bisa diakses dari luar:
-   ```bash
-   cd ../ingress
-   kubectl apply -f ingress.yaml
-   kubectl apply -f httproute.yaml
-   ```
-6. Verifikasi pods dan service berjalan:
-   ```bash
-   kubectl get pods
-   kubectl get svc
-   ```
+
+---
+
+## Continuous Integration (CI/CD Pipeline)
+
+Repositori ini telah dilengkapi dengan **GitHub Actions pipeline** (`.github/workflows/backend-ci.yml`) yang berjalan otomatis saat ada _Push_ atau _Pull Request_ ke _branch_ `main`.
+
+Tahapan pipeline:
+
+1. **Lint**: Memeriksa kode menggunakan `flake8`.
+2. **Test**: Menjalankan unit test dengan `pytest`.
+3. **Build**: Melakukan build _image docker_ untuk proses testing.
+4. **Scan (Security)**: Menjalankan pemindaian kerentanan _image_ menggunakan **Trivy**. Pipeline akan otomatis gagal (_break_) jika ditemukan kerentanan berlevel `CRITICAL` atau `HIGH`.
+5. **Push**: Push _image_ final yang aman ke Docker Hub.

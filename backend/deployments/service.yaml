@@ -13,7 +13,3 @@ spec:
       port: 5001
       targetPort: http
       protocol: TCP
-    - name: blackbox
-      port: 9115
-      targetPort: blackbox-port
-      protocol: TCP

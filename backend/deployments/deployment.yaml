@@ -5,7 +5,7 @@ metadata:
   labels:
     app: book-app-backend
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: book-app-backend
@@ -13,9 +13,6 @@ spec:
     metadata:
       labels:
         app: book-app-backend
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "9115"
     spec:
       containers:
         - name: backend
@@ -53,26 +50,3 @@ spec:
               port: http
             initialDelaySeconds: 15
             periodSeconds: 20
-
-        # sidecar exporter
-        - name: sidecar-exporter
-          image: prom/blackbox-exporter:v0.25.0
-          args:
-            - "--config.file=/etc/blackbox_exporter/config.yml"
-          ports:
-            - name: blackbox-port
-              containerPort: 9115
-          volumeMounts:
-            - name: blackbox-config
-              mountPath: /etc/blackbox_exporter
-          resources:
-            requests:
-              cpu: 10m
-              memory: 20Mi
-            limits:
-              cpu: 50m
-              memory: 50Mi
-      volumes:
-        - name: blackbox-config
-          configMap:
-            name: blackbox-config
